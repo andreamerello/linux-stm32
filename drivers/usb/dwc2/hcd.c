@@ -118,7 +118,7 @@ static void dwc2_init_fs_ls_pclk_sel(struct dwc2_hsotg *hsotg)
 
 static int dwc2_fs_phy_init(struct dwc2_hsotg *hsotg, bool select_phy)
 {
-	u32 usbcfg, i2cctl;
+	u32 usbcfg, usbgpio, i2cctl;
 	int retval = 0;
 
 	/*
@@ -141,6 +141,16 @@ static int dwc2_fs_phy_init(struct dwc2_hsotg *hsotg, bool select_phy)
 					"%s: Reset failed, aborting", __func__);
 				return retval;
 			}
+		}
+
+		if (hsotg->core_params->stm32_powerdown > 0) {
+			dev_dbg(hsotg->dev, "STM32 FS PHY enabling transceiver\n");
+			/* STM32 uses the GGPIO register as general core
+			 * configuration register.
+			 */
+			usbgpio = dwc2_readl(hsotg->regs + GGPIO);
+			usbgpio |= STM32_OTG_GCCFG_PWRDWN;
+			dwc2_writel(usbgpio, hsotg->regs + GGPIO);
 		}
 	}
 

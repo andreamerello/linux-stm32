@@ -84,6 +84,7 @@ static const struct dwc2_core_params params_hi6220 = {
 	.uframe_sched			= 0,
 	.external_id_pin_ctl		= -1,
 	.hibernation			= -1,
+	.stm32_powerdown		= 0,
 };
 
 static const struct dwc2_core_params params_bcm2835 = {
@@ -115,6 +116,7 @@ static const struct dwc2_core_params params_bcm2835 = {
 	.uframe_sched			= 0,
 	.external_id_pin_ctl		= -1,
 	.hibernation			= -1,
+	.stm32_powerdown		= 0,
 };
 
 static const struct dwc2_core_params params_rk3066 = {
@@ -147,6 +149,7 @@ static const struct dwc2_core_params params_rk3066 = {
 	.uframe_sched			= -1,
 	.external_id_pin_ctl		= -1,
 	.hibernation			= -1,
+	.stm32_powerdown		= 0,
 };
 
 static const struct dwc2_core_params params_ltq = {
@@ -179,6 +182,39 @@ static const struct dwc2_core_params params_ltq = {
 	.uframe_sched			= -1,
 	.external_id_pin_ctl		= -1,
 	.hibernation			= -1,
+	.stm32_powerdown		= 0,
+};
+
+static const struct dwc2_core_params params_stm32fs = {
+	.otg_cap			= 2,	/* non-HNP/non-SRP */
+	.otg_ver			= -1,
+	.dma_enable			= 0,
+	.dma_desc_enable		= 0,
+	.dma_desc_fs_enable		= 0,
+	.speed				= 1,	/* Full Speed */
+	.enable_dynamic_fifo		= -1,
+	.en_multiple_tx_fifo		= -1,
+	.host_rx_fifo_size		= 128,	/* 128 DWORDs */
+	.host_nperio_tx_fifo_size	= 96,	/* 96 DWORDs */
+	.host_perio_tx_fifo_size	= 96,	/* 96 DWORDs */
+	.max_transfer_size		= -1,
+	.max_packet_count		= 256,
+	.host_channels			= -1,
+	.phy_type			= 0,	/* Full Speed PHY */
+	.phy_utmi_width			= 0,
+	.phy_ulpi_ddr			= 0,
+	.phy_ulpi_ext_vbus		= 0,
+	.i2c_enable			= 0,
+	.ulpi_fs_ls			= 0,
+	.host_support_fs_ls_low_power	= 0,
+	.host_ls_low_power_phy_clk	= 0,
+	.ts_dline			= 0,
+	.reload_ctl			= 1,
+	.ahbcfg				= 0,
+	.uframe_sched			= 0,
+	.external_id_pin_ctl		= 0,
+	.hibernation			= 0,
+	.stm32_powerdown		= 1,
 };
 
 /*
@@ -464,6 +500,7 @@ static const struct of_device_id dwc2_of_match_table[] = {
 	{ .compatible = "lantiq,xrx200-usb", .data = &params_ltq },
 	{ .compatible = "snps,dwc2", .data = NULL },
 	{ .compatible = "samsung,s3c6400-hsotg", .data = NULL},
+	{ .compatible = "st,stm32-fsotg", .data = &params_stm32fs},
 	{},
 };
 MODULE_DEVICE_TABLE(of, dwc2_of_match_table);
