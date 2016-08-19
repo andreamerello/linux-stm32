@@ -388,6 +388,18 @@
 			};
 		};
 
+		sdio: sdio@40012c00 {
+			compatible = "st,stm32f4xx-sdio";
+			reg = <0x40012c00 0x400>;
+			clocks = <&rcc 0 171>;
+			interrupts = <49>;
+			status = "disabled";
+			pinctrl-0 = <&sdio_pins>;
+			pinctrl-1 = <&sdio_pins_od>;
+			pinctrl-names = "default", "opendrain";
+			max-frequency = <48000000>;
+		};
+
 		rcc: rcc@40023810 {
 			#reset-cells = <1>;
 			#clock-cells = <2>;
