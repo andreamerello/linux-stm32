@@ -404,9 +404,9 @@ static void mmci_set_mask1(struct mmci_host *host, unsigned int mask)
 		mask0 |= mask;
 
 		writel(mask0, base + MMCIMASK0);
+	} else {
+		writel(mask, base + MMCIMASK1);
 	}
-
-	writel(mask, base + MMCIMASK1);
 }
 
 static void mmci_stop_data(struct mmci_host *host)
@@ -1274,12 +1274,10 @@ static irqreturn_t mmci_irq(int irq, void *dev_id)
 
 	do {
 		status = readl(host->base + MMCISTATUS);
+		status &= readl(host->base + MMCIMASK0);
 
 		if (host->singleirq) {
-			if (status & readl(host->base + MMCIMASK1))
-				mmci_pio_irq(irq, dev_id);
-
-			status &= ~MCI_IRQ1MASK;
+			mmci_pio_irq(irq, dev_id);
 		}
 
 		/*
@@ -1287,7 +1285,6 @@ static irqreturn_t mmci_irq(int irq, void *dev_id)
 		 * enabled) since the HW seems to be triggering the IRQ on both
 		 * edges while monitoring DAT0 for busy completion.
 		 */
-		status &= readl(host->base + MMCIMASK0);
 		writel(status, host->base + MMCICLEAR);
 
 		dev_dbg(mmc_dev(host->mmc), "irq0 (data+cmd) %08x\n", status);
@@ -1710,7 +1707,8 @@ static int mmci_probe(struct amba_device *dev,
 	spin_lock_init(&host->lock);
 
 	writel(0, host->base + MMCIMASK0);
-	writel(0, host->base + MMCIMASK1);
+	if (!host->singleirq)
+		writel(0, host->base + MMCIMASK1);
 	writel(0xfff, host->base + MMCICLEAR);
 
 	/*
@@ -1800,7 +1798,8 @@ static int mmci_remove(struct amba_device *dev)
 		mmc_remove_host(mmc);
 
 		writel(0, host->base + MMCIMASK0);
-		writel(0, host->base + MMCIMASK1);
+		if (!host->singleirq)
+			writel(0, host->base + MMCIMASK1);
 
 		writel(0, host->base + MMCICOMMAND);
 		writel(0, host->base + MMCIDATACTRL);
