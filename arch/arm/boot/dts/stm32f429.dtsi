@@ -336,7 +336,38 @@
 				};
 			};
 
-			ethernet_mii: mii@0 {
+			sdio_pins: sdio_pins@0 {
+				pins {
+					pinmux = <STM32F429_PC8_FUNC_SDIO_D0>,
+						 <STM32F429_PC9_FUNC_SDIO_D1>,
+						 <STM32F429_PC10_FUNC_SDIO_D2>,
+						 <STM32F429_PC11_FUNC_SDIO_D3>,
+						 <STM32F429_PC12_FUNC_SDIO_CK>,
+						 <STM32F429_PD2_FUNC_SDIO_CMD>;
+					drive-push-pull;
+					slew-rate = <2>;
+				};
+			};
+
+			sdio_pins_od: sdio_pins_od@0 {
+				pins1 {
+					pinmux = <STM32F429_PC8_FUNC_SDIO_D0>,
+						 <STM32F429_PC9_FUNC_SDIO_D1>,
+						 <STM32F429_PC10_FUNC_SDIO_D2>,
+						 <STM32F429_PC11_FUNC_SDIO_D3>,
+						 <STM32F429_PC12_FUNC_SDIO_CK>;
+					drive-push-pull;
+					slew-rate = <2>;
+				};
+
+				pins2 {
+					pinmux = <STM32F429_PD2_FUNC_SDIO_CMD>;
+					drive-open-drain;
+					slew-rate = <2>;
+				};
+			};
+
+			ethernet0_mii: mii@0 {
 				pins {
 					pinmux = <STM32F429_PG13_FUNC_ETH_MII_TXD0_ETH_RMII_TXD0>,
 						 <STM32F429_PG14_FUNC_ETH_MII_TXD1_ETH_RMII_TXD1>,
