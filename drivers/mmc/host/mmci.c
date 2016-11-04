@@ -115,6 +115,7 @@ struct variant_data {
 	bool			qcom_dml;
 	bool			reversed_irq_handling;
 	bool			has_start_err;
+	bool			has_pad_config;
 };
 
 static __maybe_unused struct variant_data variant_arm = {
@@ -125,6 +126,7 @@ static __maybe_unused struct variant_data variant_arm = {
 	.f_max			= 100000000,
 	.reversed_irq_handling	= true,
 	.has_start_err		= true,
+	.has_pad_config		= true,
 };
 
 static __maybe_unused struct variant_data variant_arm_extended_fifo = {
@@ -134,6 +136,7 @@ static __maybe_unused struct variant_data variant_arm_extended_fifo = {
 	.pwrreg_powerup		= MCI_PWR_UP,
 	.f_max			= 100000000,
 	.has_start_err		= true,
+	.has_pad_config		= true,
 };
 
 static __maybe_unused struct variant_data variant_arm_extended_fifo_hwfc = {
@@ -144,6 +147,7 @@ static __maybe_unused struct variant_data variant_arm_extended_fifo_hwfc = {
 	.pwrreg_powerup		= MCI_PWR_UP,
 	.f_max			= 100000000,
 	.has_start_err		= true,
+	.has_pad_config		= true,
 };
 
 static __maybe_unused struct variant_data variant_u300 = {
@@ -160,6 +164,7 @@ static __maybe_unused struct variant_data variant_u300 = {
 	.pwrreg_clkgate		= true,
 	.pwrreg_nopower		= true,
 	.has_start_err		= true,
+	.has_pad_config		= true,
 };
 
 static __maybe_unused struct variant_data variant_nomadik = {
@@ -177,6 +182,7 @@ static __maybe_unused struct variant_data variant_nomadik = {
 	.pwrreg_clkgate		= true,
 	.pwrreg_nopower		= true,
 	.has_start_err		= true,
+	.has_pad_config		= true,
 };
 
 static __maybe_unused struct variant_data variant_ux500 = {
@@ -200,6 +206,7 @@ static __maybe_unused struct variant_data variant_ux500 = {
 	.busy_detect_mask	= MCI_ST_BUSYENDMASK,
 	.pwrreg_nopower		= true,
 	.has_start_err		= true,
+	.has_pad_config		= true,
 };
 
 static __maybe_unused struct variant_data variant_ux500v2 = {
@@ -225,6 +232,7 @@ static __maybe_unused struct variant_data variant_ux500v2 = {
 	.busy_detect_mask	= MCI_ST_BUSYENDMASK,
 	.pwrreg_nopower		= true,
 	.has_start_err		= true,
+	.has_pad_config		= true,
 };
 
 static __maybe_unused struct variant_data variant_qcom = {
@@ -244,6 +252,7 @@ static __maybe_unused struct variant_data variant_qcom = {
 	.qcom_fifo		= true,
 	.qcom_dml		= true,
 	.has_start_err		= true,
+	.has_pad_config		= true,
 };
 
 /* Busy detection for the ST Micro variant */
@@ -1362,6 +1371,8 @@ static void mmci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 	u32 pwr = 0;
 	unsigned long flags;
 	int ret;
+	struct pinctrl_state *pins;
+	bool is_opendrain;
 
 	if (host->plat->ios_handler &&
 		host->plat->ios_handler(mmc_dev(mmc), ios))
@@ -1420,16 +1431,31 @@ static void mmci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 				~MCI_ST_DATA2DIREN);
 	}
 
-	if (ios->bus_mode == MMC_BUSMODE_OPENDRAIN) {
-		if (host->hw_designer != AMBA_VENDOR_ST)
-			pwr |= MCI_ROD;
-		else {
-			/*
-			 * The ST Micro variant use the ROD bit for something
-			 * else and only has OD (Open Drain).
-			 */
-			pwr |= MCI_OD;
+	if (host->variant->has_pad_config) {
+		if (ios->bus_mode == MMC_BUSMODE_OPENDRAIN) {
+			if (host->hw_designer != AMBA_VENDOR_ST) {
+				pwr |= MCI_ROD;
+			} else {
+				/*
+				 * The ST Micro variant use the ROD bit for
+				 * something else and only has OD (Open Drain).
+				 */
+				pwr |= MCI_OD;
+			}
 		}
+	} else {
+		/*
+		 * If the variant cannot configure the pads by its own, then we
+		 * expect the pinctrl to be able to do that for us
+		 */
+		is_opendrain = (ios->bus_mode == MMC_BUSMODE_OPENDRAIN);
+		pins = pinctrl_lookup_state(host->pinctrl, is_opendrain ?
+					MMCI_PINCTRL_STATE_OPENDRAIN :
+					MMCI_PINCTRL_STATE_PUSHPULL);
+		if (IS_ERR(pins))
+			dev_warn(mmc_dev(mmc), "Cannot select pin drive type via pinctrl\n");
+		else
+			pinctrl_select_state(host->pinctrl, pins);
 	}
 
 	/*
@@ -1537,7 +1563,6 @@ static int mmci_of_parse(struct device_node *np, struct mmc_host *mmc)
 		mmc->caps |= MMC_CAP_MMC_HIGHSPEED;
 	if (of_get_property(np, "mmc-cap-sd-highspeed", NULL))
 		mmc->caps |= MMC_CAP_SD_HIGHSPEED;
-
 	return 0;
 }
 
@@ -1575,6 +1600,13 @@ static struct mmci_host *mmci_probe(struct device *dev,
 	host = mmc_priv(mmc);
 	host->mmc = mmc;
 
+	if (!variant->has_pad_config) {
+		host->pinctrl = devm_pinctrl_get(dev);
+		if (IS_ERR(host->pinctrl)) {
+			dev_err(dev, "failed to get pinctrl");
+			goto host_free;
+		}
+	}
 	host->clk = devm_clk_get(dev, NULL);
 	if (IS_ERR(host->clk)) {
 		ret = PTR_ERR(host->clk);
