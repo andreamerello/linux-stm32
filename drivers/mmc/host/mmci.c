@@ -235,6 +235,23 @@ static __maybe_unused struct variant_data variant_ux500v2 = {
 	.has_pad_config		= true,
 };
 
+static __maybe_unused struct variant_data variant_stm32 = {
+	.fifosize		= 32 * 4,
+	.fifohalfsize		= 8 * 4,
+	.clkreg			= MCI_CLK_ENABLE,
+	.clkreg_enable		= MCI_ST_UX500_HWFCEN,
+	.clkreg_8bit_bus_enable = MCI_ST_8BIT_BUS,
+	.clkreg_neg_edge_enable	= MCI_ST_UX500_NEG_EDGE,
+	.datalength_bits	= 24,
+	.datactrl_mask_sdio	= MCI_DPSM_ST_SDIOEN,
+	.st_sdio		= true,
+	.st_clkdiv		= true,
+	.pwrreg_powerup		= MCI_PWR_ON,
+	.f_max			= 48000000,
+	.pwrreg_clkgate		= true,
+	.pwrreg_nopower		= true,
+};
+
 static __maybe_unused struct variant_data variant_qcom = {
 	.fifosize		= 16 * 4,
 	.fifohalfsize		= 8 * 4,
@@ -2033,6 +2050,7 @@ static struct amba_driver mmci_driver = {
 #endif
 
 static const struct of_device_id mmci_pltfm_match[] = {
+	{ .compatible = "st,stm32f4xx-sdio", .data = &variant_stm32},
 	{},
 };
 
