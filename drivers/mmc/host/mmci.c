@@ -1649,8 +1649,12 @@ static struct mmci_host *mmci_probe(struct device *dev,
 	 */
 	if (host->mclk > variant->f_max) {
 		ret = clk_set_rate(host->clk, variant->f_max);
-		if (ret < 0)
+		if (ret < 0) {
+			dev_err(dev, "failed to set clock to %d\n",
+				variant->f_max);
 			goto clk_disable;
+		}
+
 		host->mclk = clk_get_rate(host->clk);
 		dev_dbg(mmc_dev(mmc), "eventual mclk rate: %u Hz\n",
 			host->mclk);
