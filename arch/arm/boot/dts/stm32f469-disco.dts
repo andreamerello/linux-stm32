@@ -65,6 +65,13 @@
 		serial0 = &usart3;
 	};
 
+	mmc_vcard: mmc_vcard {
+		compatible = "regulator-fixed";
+		regulator-name = "mmc_vcard";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+	};
+
 	soc {
 		dma-ranges = <0xc0000000 0x0 0x10000000>;
 	};
@@ -76,6 +83,28 @@
 
 &clk_hse {
 	clock-frequency = <8000000>;
+};
+
+&pinctrl {
+	sdio-cd {
+		sdio_cd: sdio-cd {
+			pins {
+				pinmux = <STM32F429_PG2_FUNC_GPIO>;
+				bias-pull-up;
+			};
+		};
+	};
+};
+
+&sdio {
+	status = "okay";
+	vmmc-supply = <&mmc_vcard>;
+	cd-gpios = <&gpiog 2 0>;
+	cd-inverted;
+	pinctrl-names = "default", "opendrain";
+	pinctrl-0 = <&sdio_pins>;
+	pinctrl-1 = <&sdio_pins_od>;
+	bus-width = <4>;
 };
 
 &usart3 {
