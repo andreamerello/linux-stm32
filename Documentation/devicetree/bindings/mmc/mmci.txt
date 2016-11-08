@@ -8,7 +8,7 @@ by mmc.txt and the properties used by the mmci driver. Using "st" as
 the prefix for a property, indicates support by the ST Micro variant.
 
 Required properties:
-- compatible             : contains "arm,pl18x", "arm,primecell".
+- compatible             : contains "arm,pl18x", "arm,primecell" or "st,stm32f4xx-sdio"
 - vmmc-supply            : phandle to the regulator device tree node, mentioned
                            as the VCC/VDD supply in the eMMC/SD specs.
 
