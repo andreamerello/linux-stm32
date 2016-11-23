@@ -327,6 +327,9 @@ out:
  */
 static inline int do_refcount_check(struct mount *mnt, int count)
 {
+	struct mount *topper = __lookup_mnt(&mnt->mnt, mnt->mnt.mnt_root);
+	if (topper)
+		count++;
 	return mnt_get_count(mnt) > count;
 }
 
@@ -359,7 +362,7 @@ int propagate_mount_busy(struct mount *mnt, int refcnt)
 
 	for (m = propagation_next(parent, parent); m;
 	     		m = propagation_next(m, parent)) {
-		child = __lookup_mnt_last(&m->mnt, mnt->mnt_mountpoint);
+		child = __lookup_mnt(&m->mnt, mnt->mnt_mountpoint);
 		if (child && list_empty(&child->mnt_mounts) &&
 		    (ret = do_refcount_check(child, 1)))
 			break;
@@ -381,7 +384,7 @@ void propagate_mount_unlock(struct mount *mnt)
 
 	for (m = propagation_next(parent, parent); m;
 			m = propagation_next(m, parent)) {
-		child = __lookup_mnt_last(&m->mnt, mnt->mnt_mountpoint);
+		child = __lookup_mnt(&m->mnt, mnt->mnt_mountpoint);
 		if (child)
 			child->mnt.mnt_flags &= ~MNT_LOCKED;
 	}
@@ -399,9 +402,11 @@ static void mark_umount_candidates(struct mount *mnt)
 
 	for (m = propagation_next(parent, parent); m;
 			m = propagation_next(m, parent)) {
-		struct mount *child = __lookup_mnt_last(&m->mnt,
+		struct mount *child = __lookup_mnt(&m->mnt,
 						mnt->mnt_mountpoint);
-		if (child && (!IS_MNT_LOCKED(child) || IS_MNT_MARKED(m))) {
+		if (!child || (child->mnt.mnt_flags & MNT_UMOUNT))
+			continue;
+		if (!IS_MNT_LOCKED(child) || IS_MNT_MARKED(m)) {
 			SET_MNT_MARK(child);
 		}
 	}
@@ -420,8 +425,8 @@ static void __propagate_umount(struct mount *mnt)
 
 	for (m = propagation_next(parent, parent); m;
 			m = propagation_next(m, parent)) {
-
-		struct mount *child = __lookup_mnt_last(&m->mnt,
+		struct mount *topper;
+		struct mount *child = __lookup_mnt(&m->mnt,
 						mnt->mnt_mountpoint);
 		/*
 		 * umount the child only if the child has no children
@@ -430,6 +435,16 @@ static void __propagate_umount(struct mount *mnt)
 		if (!child || !IS_MNT_MARKED(child))
 			continue;
 		CLEAR_MNT_MARK(child);
+
+		/* If there is exactly one mount covering all of child
+		 * replace child with that mount.
+		 */
+		topper = __lookup_mnt(&child->mnt, child->mnt.mnt_root);
+		if (topper &&
+		    (child->mnt_mounts.next == &topper->mnt_child) &&
+		    (topper->mnt_child.next == &child->mnt_mounts))
+			mnt_change_mountpoint(child->mnt_parent, child->mnt_mp, topper);
+
 		if (list_empty(&child->mnt_mounts)) {
 			list_del_init(&child->mnt_child);
 			child->mnt.mnt_flags |= MNT_UMOUNT;
