@@ -2023,7 +2023,8 @@ static int mv88e6xxx_atu_get(struct mv88e6xxx_chip *chip, int fid,
 	struct mv88e6xxx_atu_entry next;
 	int err;
 
-	eth_broadcast_addr(next.mac);
+	memcpy(next.mac, addr, ETH_ALEN);
+	eth_addr_dec(next.mac);
 
 	err = _mv88e6xxx_atu_mac_write(chip, next.mac);
 	if (err)
@@ -2041,7 +2042,7 @@ static int mv88e6xxx_atu_get(struct mv88e6xxx_chip *chip, int fid,
 			*entry = next;
 			return 0;
 		}
-	} while (!is_broadcast_ether_addr(next.mac));
+	} while (ether_addr_greater(addr, next.mac));
 
 	memset(entry, 0, sizeof(*entry));
 	entry->fid = fid;
@@ -4240,10 +4241,6 @@ static void mv88e6xxx_phy_destroy(struct mv88e6xxx_chip *chip)
 static int mv88e6xxx_smi_init(struct mv88e6xxx_chip *chip,
 			      struct mii_bus *bus, int sw_addr)
 {
-	/* ADDR[0] pin is unavailable externally and considered zero */
-	if (sw_addr & 0x1)
-		return -EINVAL;
-
 	if (sw_addr == 0)
 		chip->smi_ops = &mv88e6xxx_smi_single_chip_ops;
 	else if (mv88e6xxx_has(chip, MV88E6XXX_FLAGS_MULTI_CHIP))
