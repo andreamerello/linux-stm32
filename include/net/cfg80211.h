@@ -311,6 +311,34 @@ struct ieee80211_supported_band {
 	struct ieee80211_sta_vht_cap vht_cap;
 };
 
+/**
+ * wiphy_read_of_freq_limits - read frequency limits from device tree
+ *
+ * @wiphy: the wireless device to get extra limits for
+ *
+ * Some devices may have extra limitations specified in DT. This may be useful
+ * for chipsets that normally support more bands but are limited due to board
+ * design (e.g. by antennas or external power amplifier).
+ *
+ * This function reads info from DT and uses it to *modify* channels (disable
+ * unavailable ones). It's usually a *bad* idea to use it in drivers with
+ * shared channel data as DT limitations are device specific. You should make
+ * sure to call it only if channels in wiphy are copied and can be modified
+ * without affecting other devices.
+ *
+ * As this function access device node it has to be called after set_wiphy_dev.
+ * It also modifies channels so they have to be set first.
+ * If using this helper, call it before wiphy_register().
+ */
+#ifdef CONFIG_OF
+void wiphy_read_of_freq_limits(struct wiphy *wiphy);
+#else /* CONFIG_OF */
+static inline void wiphy_read_of_freq_limits(struct wiphy *wiphy)
+{
+}
+#endif /* !CONFIG_OF */
+
+
 /*
  * Wireless hardware/device configuration structures and methods
  */
@@ -3955,26 +3983,15 @@ int ieee80211_channel_to_frequency(int chan, enum nl80211_band band);
  */
 int ieee80211_frequency_to_channel(int freq);
 
-/*
- * Name indirection necessary because the ieee80211 code also has
- * a function named "ieee80211_get_channel", so if you include
- * cfg80211's header file you get cfg80211's version, if you try
- * to include both header files you'll (rightfully!) get a symbol
- * clash.
- */
-struct ieee80211_channel *__ieee80211_get_channel(struct wiphy *wiphy,
-						  int freq);
 /**
  * ieee80211_get_channel - get channel struct from wiphy for specified frequency
+ *
  * @wiphy: the struct wiphy to get the channel for
  * @freq: the center frequency of the channel
+ *
  * Return: The channel struct from @wiphy at @freq.
  */
-static inline struct ieee80211_channel *
-ieee80211_get_channel(struct wiphy *wiphy, int freq)
-{
-	return __ieee80211_get_channel(wiphy, freq);
-}
+struct ieee80211_channel *ieee80211_get_channel(struct wiphy *wiphy, int freq);
 
 /**
  * ieee80211_get_response_rate - get basic rate for a given rate
