@@ -350,7 +350,7 @@
 			};
 
 			sdio_pins_od:sdio_pins_od@0 {
-				pins {
+				pins1 {
 					pinmux = <STM32F429_PC8_FUNC_SDIO_D0>,
 						 <STM32F429_PC9_FUNC_SDIO_D1>,
 						 <STM32F429_PC10_FUNC_SDIO_D2>,
@@ -360,7 +360,7 @@
 					slew-rate = <2>;
 				};
 
-				pins_od {
+				pins2 {
 					pinmux = <STM32F429_PD2_FUNC_SDIO_CMD>;
 					drive-open-drain;
 					slew-rate = <2>;
