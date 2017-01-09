@@ -1975,9 +1975,9 @@ static int mmci_probe_amba(struct amba_device *dev, const struct amba_id *id)
 	struct mmci_host *host;
 	struct variant_data *variant = id->data;
 
-	host = mmci_probe(&pdev->dev, variant, &dev->res,
+	host = mmci_probe(&dev->dev, variant, &dev->res,
 			  dev->irq[0], dev->irq[1]);
-	if (IS_ERR(ret))
+	if (IS_ERR(host))
 		return PTR_ERR(host);
 
 	host->hw_designer = amba_manf(dev);
@@ -2063,8 +2063,6 @@ static struct amba_driver mmci_driver = {
 	.remove		= mmci_remove_amba,
 	.id_table	= mmci_ids,
 };
-
-module_amba_driver(mmci_driver);
 #endif
 
 static const struct of_device_id mmci_pltfm_match[] = {
@@ -2159,7 +2157,45 @@ static struct platform_driver mmci_pltfm_driver = {
 	},
 };
 
-module_platform_driver(mmci_pltfm_driver);
+static int __init mmci_init(void)
+{
+	int ret;
+	__maybe_unused int ret_amba;
+
+	ret = platform_driver_register(&mmci_pltfm_driver);
+
+#ifdef CONFIG_ARM_AMBA
+	ret_amba = amba_driver_register(&mmci_driver);
+
+	/* if both plaform and amba failed. Just fail. */
+	if (ret && ret_amba)
+		return ret;
+
+	/*
+	 * If only one of the two succeeded, don't fail here, because the
+	 * other one is probably usable, but spit a warning..
+	 */
+	if (ret_amba)
+		pr_warn("could not register MMCI amba driver");
+
+	if (ret)
+		pr_warn("could not register MMCI platform driver");
+
+	return 0;
+#endif
+	return ret;
+}
+
+static void __exit mmci_exit(void)
+{
+	platform_driver_unregister(&mmci_pltfm_driver);
+#ifdef CONFIG_ARM_AMBA
+	amba_driver_unregister(&mmci_driver);
+#endif
+}
+
+module_init(mmci_init);
+module_exit(mmci_exit);
 
 module_param(fmax, uint, 0444);
 
