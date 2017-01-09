@@ -336,7 +336,7 @@
 				};
 			};
 
-			sdio_pins:sdio_pins@0 {
+			sdio_pins: sdio_pins@0 {
 				pins {
 					pinmux = <STM32F429_PC8_FUNC_SDIO_D0>,
 						 <STM32F429_PC9_FUNC_SDIO_D1>,
@@ -349,7 +349,7 @@
 				};
 			};
 
-			sdio_pins_od:sdio_pins_od@0 {
+			sdio_pins_od: sdio_pins_od@0 {
 				pins1 {
 					pinmux = <STM32F429_PC8_FUNC_SDIO_D0>,
 						 <STM32F429_PC9_FUNC_SDIO_D1>,
