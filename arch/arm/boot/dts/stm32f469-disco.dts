@@ -102,9 +102,9 @@
 	vmmc-supply = <&mmc_vcard>;
 	cd-gpios = <&gpiog 2 0>;
 	cd-inverted;
-	pinctrl-names = "default", "opendrain", "cd";
-	pinctrl-0 = <&sdio_pins>, <&sdio_cd>;
-	pinctrl-1 = <&sdio_pins_od>, <&sdio_cd>;
+	pinctrl-names = "default", "opendrain";
+	pinctrl-0 = <&sdio_pins>;
+	pinctrl-1 = <&sdio_pins_od>;
 	bus-width = <4>;
 };
 
