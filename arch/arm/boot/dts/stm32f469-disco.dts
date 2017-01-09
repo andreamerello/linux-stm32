@@ -70,7 +70,6 @@
 		regulator-name = "mmc_vcard";
 		regulator-min-microvolt = <3300000>;
 		regulator-max-microvolt = <3300000>;
-
 	};
 
 	soc {
