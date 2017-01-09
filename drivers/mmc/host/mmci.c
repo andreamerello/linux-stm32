@@ -1611,8 +1611,10 @@ static struct mmci_host *mmci_probe(struct device *dev,
 		return ERR_PTR(-ENOMEM);
 
 	ret = mmci_of_parse(np, mmc);
-	if (ret)
+	if (ret) {
+		dev_err(dev, "failed to parse MMC OF");
 		goto host_free;
+	}
 
 	host = mmc_priv(mmc);
 	host->mmc = mmc;
@@ -1627,12 +1629,15 @@ static struct mmci_host *mmci_probe(struct device *dev,
 	host->clk = devm_clk_get(dev, NULL);
 	if (IS_ERR(host->clk)) {
 		ret = PTR_ERR(host->clk);
+		dev_err(dev, "failed to get clock");
 		goto host_free;
 	}
 
 	ret = clk_prepare_enable(host->clk);
-	if (ret)
+	if (ret) {
+		dev_err(dev, "failed to prepare/enable clk");
 		goto host_free;
+	}
 
 	if (variant->qcom_fifo)
 		host->get_rx_fifocnt = mmci_qcom_get_rx_fifocnt;
@@ -1664,6 +1669,7 @@ static struct mmci_host *mmci_probe(struct device *dev,
 	host->base = devm_ioremap_resource(dev, res);
 	if (IS_ERR(host->base)) {
 		ret = PTR_ERR(host->base);
+		dev_err(dev, "failed to remap resource");
 		goto clk_disable;
 	}
 
@@ -1787,8 +1793,10 @@ static struct mmci_host *mmci_probe(struct device *dev,
 				goto clk_disable;
 			else if (gpio_is_valid(plat->gpio_cd)) {
 				ret = mmc_gpio_request_cd(mmc, plat->gpio_cd, 0);
-				if (ret)
+				if (ret) {
+					dev_err(dev, "failed to get CD pin");
 					goto clk_disable;
+				}
 			}
 		}
 
@@ -1798,16 +1806,20 @@ static struct mmci_host *mmci_probe(struct device *dev,
 				goto clk_disable;
 			else if (gpio_is_valid(plat->gpio_wp)) {
 				ret = mmc_gpio_request_ro(mmc, plat->gpio_wp);
-				if (ret)
+				if (ret) {
+					dev_err(dev, "failed to get WP pin");
 					goto clk_disable;
+				}
 			}
 		}
 	}
 
 	ret = devm_request_irq(dev, irq0, mmci_irq, IRQF_SHARED,
 			       DRIVER_NAME " (cmd)", host);
-	if (ret)
+	if (ret) {
+		dev_err(dev, "failed to get IRQ");
 		goto clk_disable;
+	}
 
 	if (!irq1) {
 		host->singleirq = true;
